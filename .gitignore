@@ -1,0 +1,13 @@
+*.aux
+*.log
+*.dvi
+*.out
+*.gz
+*~
+*.swp
+*.fls
+*latexmk
+*.bak
+*.png
+*.ipynb
+*.m
