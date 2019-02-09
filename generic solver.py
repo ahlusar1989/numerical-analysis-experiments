@@ -16,7 +16,8 @@ from scipy.io import savemat
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 import numpy as np
-
+from IPython.core.display import display, HTML
+import json
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -101,19 +102,43 @@ def generate_sparse_matrix(m):
     matprint(mat.toarray())
     return mat
 
-# fig = plt.figure()
-# ax = fig.gca(projection='3d')
+def plot3D(X, Y, Z, height=600, xlabel = "X", ylabel = "Y", zlabel = "Z", initialCamera = None):
 
-# surf = ax.plot_surface(X, Y, G, cmap=cm.coolwarm,
-#                        linewidth=0, antialiased=False)
+    options = {
+        "width": "100%",
+        "style": "surface",
+        "showPerspective": True,
+        "showGrid": True,
+        "showShadow": False,
+        "keepAspectRatio": True,
+        "height": str(height) + "px"
+    }
 
-# #----- Static image
-# ax.set_xlabel('X')
-# ax.set_ylabel('Y')
-# ax.set_zlabel('G')
-# plt.tight_layout()
-# ax.view_init(20, -106)
-# plt.show()
+    if initialCamera:
+        options["cameraPosition"] = initialCamera
+        
+    data = [ {"x": X[y,x], "y": Y[y,x], "z": Z[y,x]} for y in range(X.shape[0]) for x in range(X.shape[1]) ]
+    visCode = r"""
+       <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" type="text/css" rel="stylesheet" />
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+       <div id="pos" style="top:0px;left:0px;position:absolute;"></div>
+       <div id="visualization"></div>
+       <script type="text/javascript">
+        var data = new vis.DataSet();
+        data.add(""" + json.dumps(data) + """);
+        var options = """ + json.dumps(options) + """;
+        var container = document.getElementById("visualization");
+        var graph3d = new vis.Graph3d(container, data, options);
+        graph3d.on("cameraPositionChange", function(evt)
+        {
+            elem = document.getElementById("pos");
+            elem.innerHTML = "H: " + evt.horizontal + "<br>V: " + evt.vertical + "<br>D: " + evt.distance;
+        });
+       </script>
+    """
+    htmlCode = "<iframe srcdoc='"+visCode+"' width='100%' height='" + str(height) + "px' style='border:0;' scrolling='no'> </iframe>"
+    display(HTML(htmlCode))
+
 
 if __name__ == "__main__":
 
@@ -135,22 +160,22 @@ if __name__ == "__main__":
 	G = bc_dirichlet(X, Y, M)
 
 	#----- Rearranges matrix G into an array
-	g = np.zeros(((M-1)**2, 1))
-	g[0:M-1, 0] = G[1:M, 0]
-	g[(M-1)**2 - M + 1: M**2, 0] = G[1:M, M]
-	g[0:M**2:M-1, 0] = g[0:M**2: M - 1, 0] + G[0, 1:M]
-	g[M - 2:M**2:M - 1, 0] = g[M - 2:M**2:M-1, 0] + G[M, 1:M]
-
+	g = np.zeros(((M - 1)**2, 1))
+	g[0: M - 1, 0] = G[1 : M, 0]
+	g[(M - 1)**2 - M + 1: M**2, 0] = G[1 : M, M]
+	g[0 : M**2: M - 1, 0] = g[0 : M**2: M - 1, 0] + G[0, 1: M]
+	g[M - 2:M**2: M - 1, 0] = g[M - 2:M**2:M - 1, 0] + G[M, 1: M]
+	print("Iterative version is above ==========>")
 	A_iterative = generate_A(4)
-	print("Iterative version is above^ ==========>")
 	print()
 	A = generate_sparse_matrix(M)
 
+	print("Non-iterative method ==========>")
 	A_to_dense = A.todense() # for debugging
 
 	#----- Solve A*x=b => x=A\b
 	U = spsolve(A, f*(h**2)+g)
-	U = U.reshape((M-1, M-1)).T
+	U = U.reshape((M - 1, M - 1)).T
 
 	G[1:M, 1:M] = U
 
