@@ -79,7 +79,7 @@ ipywidgets==7.4.2
 jaraco.functools==2.0
 jedi==0.13.2
 jeepney==0.4
-Jinja2==2.10
+Jinja2==2.11.3
 jmespath==0.9.3
 joblib==0.12.5
 jsonschema==2.6.0
